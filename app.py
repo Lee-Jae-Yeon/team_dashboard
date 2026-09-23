@@ -556,8 +556,7 @@ fig_detail_box = px.box(
         '총항해시간(TOTAL_SAILING_TIME)': '총항해시간',
         '기준일자(DATE)': '기준일자',
         '도착항코드(DEST_PORT_CODE)': '도착항코드'
-    },
-    height=400
+    }
 )
 
 st.plotly_chart(
