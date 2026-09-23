@@ -525,17 +525,23 @@ col1, col2, col3 = st.columns(3)
 
 col1.metric(
     '평균 총항해시간',
-    f'{mean_sailing_time:.2f}'
+    f'{mean_sailing_time:.2f}',
+    border=True,
+    height=120
 )
 
 col2.metric(
     '전체 항해 건수',
-    len(selected_route)
+    len(selected_route),
+    border=True,
+    height=120
 )
 
 col3.metric(
     '이상치 건수',
-    len(sailing_outliers)
+    len(sailing_outliers),
+    border=True,
+    height=120
 )
 
 fig_detail_box = px.box(
