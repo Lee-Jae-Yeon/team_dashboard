@@ -202,15 +202,11 @@ kpi_df['연월'] = (
     .astype(str)
 )
 
-
 route_kpi_df = kpi_df.groupby(KPI_ROUTE_COL).agg(
     대기시간=('대기시간(WAITING_TIME)', 'mean'),
     정시성=('항만정시성(ON_TIME_PERFORMANCE)', 'mean'),
     항만효율성=('항만효율성(PORT_EFFICIENCY)', 'mean')
 )
-
-
-# ==================================================
 
 port_mean = kpi_df['항만효율성(PORT_EFFICIENCY)'].mean()
 
@@ -252,11 +248,13 @@ with st.sidebar:
         key='kpi_route'
     )
 
-    selected_month_range = st.slider(
-        '월 범위',
-        min_value=1,
-        max_value=12,
-        value=(1, 12),
+    selected_period = st.select_slider(
+        '기간 선택',
+        options=sorted(kpi_df['연월'].unique()),
+        value=(
+            kpi_df['연월'].min(),
+            kpi_df['연월'].max()
+        ),
         key='kpi_month'
     )
 
@@ -280,7 +278,7 @@ selected_waiting_time = route_kpi_df.loc[
     '대기시간'
 ]
 
-selected_on_time_performance = route_kpi_df.loc[
+selected_on_time = route_kpi_df.loc[
     selected_kpi_route,
     '정시성'
 ]
@@ -290,7 +288,8 @@ st.title('부산항 항만물류지표 분석 대시보드')
 
 st.caption(
     '부산항에서 출발하는 주요 컨테이너선 노선의 종합 물류 지표 KPI, 노선별 KPI 및 총항해시간 이상치, 지역별 항만 효율성을 분석합니다.  \n'
-    'Data: 부산항만공사_외내항컨테이너통합집계정보, 2024년'
+    '한국해양진흥공사_부산항 노선별 항만물류지표(KPLI)_20260622  \n'
+    '지역별 물동량과 항만효율성의 관계(Port-MIS)'
 )
 
 # 기존 전체 평균 계산값을 종합 KPI로 표시
@@ -301,7 +300,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric(
         '항만효율성',
-        value=f'{port_mean:.2f}',
+        value=f'{port_mean:.2f}%',
         border=True,
         height=120
     )
@@ -309,7 +308,7 @@ with col1:
 with col2:
     st.metric(
         '대기시간',
-        value=f'{waiting_mean:.2f}',
+        value=f'{waiting_mean:.2f}h',
         border=True,
         height=120
     )
@@ -317,7 +316,7 @@ with col2:
 with col3:
     st.metric(
         '정시성',
-        value=f'{on_time_mean:.2f}',
+        value=f'{on_time_mean:.2f}%',
         border=True,
         height=120
     )
@@ -332,7 +331,7 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.subheader('📌 주요 분석 결과')
+st.subheader('📌 분석 결과')
 st.markdown(
     '극동아시아는 물동량이 가장 많지만 항만효율성은 상대적으로 낮았으며, 유럽은 물동량이 적음에도 높은 항만효율성을 보였다.   \n 전체적으로 물동량과 항만효율성이 반드시 비례하지 않으며, 지역별로 서로 다른 흐름이 나타났다.'
 )
@@ -348,7 +347,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric(
         '항만효율성',
-        value=f'{selected_port_efficiency:.2f}',
+        value=f'{selected_port_efficiency:.2f}%',
         border=True,
         height=120
     )
@@ -356,7 +355,7 @@ with col1:
 with col2:
     st.metric(
         '대기시간',
-        value=f'{selected_waiting_time:.2f}',
+        value=f'{selected_waiting_time:.2f}h',
         border=True,
         height=120
     )
@@ -364,7 +363,7 @@ with col2:
 with col3:
     st.metric(
         '정시성',
-        value=f'{selected_on_time_performance:.2f}',
+        value=f'{selected_on_time:.2f}%',
         border=True,
         height=120
     )
@@ -378,15 +377,10 @@ monthly_kpi_df = kpi_df[
 ].copy()
 
 
-# 선택한 월 범위
-monthly_kpi_df['월'] = (
-    monthly_kpi_df['기준일자(DATE)'].dt.month
-)
-
 monthly_kpi_df = monthly_kpi_df[
-    monthly_kpi_df['월'].between(
-        selected_month_range[0],
-        selected_month_range[1]
+    monthly_kpi_df['연월'].between(
+        selected_period[0],
+        selected_period[1]
     )
 ]
 
@@ -425,9 +419,11 @@ with col1:
     )
 
     fig_port.update_layout(
-        xaxis_title='월',
+        xaxis_title='연월',
         yaxis_title='항만효율성'
     )
+
+    fig_port.update_xaxes(tickformat='%Y-%m')
 
     st.plotly_chart(
         fig_port,
@@ -446,9 +442,11 @@ with col2:
     )
 
     fig_waiting.update_layout(
-        xaxis_title='월',
+        xaxis_title='연월',
         yaxis_title='대기시간'
     )
+
+    fig_waiting.update_xaxes(tickformat='%Y-%m')
 
     st.plotly_chart(
         fig_waiting,
@@ -467,15 +465,16 @@ with col3:
     )
 
     fig_on_time.update_layout(
-        xaxis_title='월',
+        xaxis_title='연월',
         yaxis_title='정시성'
     )
+
+    fig_on_time.update_xaxes(tickformat='%Y-%m')
 
     st.plotly_chart(
         fig_on_time,
         width='stretch'
     )
-
 
 selected_route = sailing_route_df[
     sailing_route_df['도착항명(DEST_PORT_NAME)'] == selected_sailing_route
@@ -491,7 +490,11 @@ fig1 = px.box(
     sailing_route_df,
     x='도착항명(DEST_PORT_NAME)',
     y='총항해시간(TOTAL_SAILING_TIME)',
-    points='outliers'
+    points='outliers',
+    labels={
+        '도착항명(DEST_PORT_NAME)': '도착항명',
+        '총항해시간(TOTAL_SAILING_TIME)': '총항해시간'
+    }
 )
 
 st.plotly_chart(
@@ -521,30 +524,37 @@ mean_sailing_time = selected_route[
     '총항해시간(TOTAL_SAILING_TIME)'
 ].mean()
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 col1.metric(
     '평균 총항해시간',
-    f'{mean_sailing_time:.2f}',
+    f'{mean_sailing_time:.2f}h',
     border=True,
     height=120
 )
 
 col2.metric(
     '전체 항해 건수',
-    len(selected_route),
+    f'{len(selected_route)}건',
     border=True,
     height=120
 )
 
 col3.metric(
     '이상치 건수',
-    len(sailing_outliers),
+    f'{len(sailing_outliers)}건',
     border=True,
     height=120
 )
 
-fig_detail_box = px.box(
+col4.metric(
+    '이상치 비율',
+    f'{len(sailing_outliers) / len(selected_route) * 100:.2f}%',
+    border=True,
+    height=120
+)
+
+fig3 = px.box(
     selected_route,
     y='총항해시간(TOTAL_SAILING_TIME)',
     points='all',
@@ -556,11 +566,12 @@ fig_detail_box = px.box(
         '총항해시간(TOTAL_SAILING_TIME)': '총항해시간',
         '기준일자(DATE)': '기준일자',
         '도착항코드(DEST_PORT_CODE)': '도착항코드'
-    }
+    },
+    title=f'{selected_sailing_route} 총항해시간 분포 및 이상치'
 )
 
 st.plotly_chart(
-    fig_detail_box,
+    fig3,
     use_container_width=True
 )
 
@@ -571,7 +582,11 @@ fig2 = px.line(
     x='기준일자(DATE)',
     y='총항해시간(TOTAL_SAILING_TIME)',
     markers=True,
-    title='날짜별 총항해시간'
+    title=f'{selected_sailing_route} 날짜별 총항해시간',
+    labels={
+        '기준일자(DATE)': '기준일자',
+        '총항해시간(TOTAL_SAILING_TIME)': '총항해시간'
+    }
 )
 
 
@@ -591,5 +606,10 @@ fig2.add_scatter(
 st.plotly_chart(
     fig2,
     use_container_width=True
+)
+
+st.subheader('📌 분석 결과')
+st.markdown(
+    '노선별 총항해시간은 목적지에 따라 큰 차이가 있으므로 각 노선의 항해시간 분포에 IQR 기준을 적용하여 이상 항해 여부를 확인하였다.   \n 로스앤젤레스항(5.77%), 뉴욕항(5.71%), 싱가포르항(5.56%), 제벨알리항(5.41%) 순으로 높은 이상치 비율을 보였다.'
 )
 
